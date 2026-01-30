@@ -1,0 +1,34 @@
+services:
+  client_br:
+    # Replaces: docker build -t client_worker_v1 .
+    build:
+      context: .
+    image: client_worker_v1
+    deploy:
+      resources:
+        limits:
+          cpus: "26.0"
+          memory: 10G
+
+    # Replaces: --name client_br
+    container_name: client_bro
+    networks:
+      - worker_network
+
+    # Replaces: -v worker_volume:/app/client-bro/logs
+    volumes:
+      - worker_volume:/app/client-bro/logs
+
+    # Replaces the arguments passed at the end: 192.168.137.138 2
+    command: ["192.168.137.1", "10"]
+
+# Replaces: docker volume create worker_volume
+
+networks:
+  worker_network:
+    name: worker_network
+
+volumes:
+  worker_volume:
+    name: worker_volume
+# docker compose up -d --build
