@@ -7,7 +7,7 @@ COMMIT_MSG="${1:-feat: Update Dockerfile}"
 CURRENT=$(git branch --show-current)
 
 # Get all branches
-BRANCHES=$(git branch --format='%(refname:short)' | grep -v "^$SOURCE_BRANCH$")
+BRANCHES=$(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin | grep -v "^$SOURCE_BRANCH$" | grep -v "^HEAD$")
 
 # Update file on source branch first
 git checkout $SOURCE_BRANCH
