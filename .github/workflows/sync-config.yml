@@ -1,0 +1,149 @@
+name: Sync Config to Branches
+
+on:
+  push:
+    branches:
+      - main
+      - template
+    paths:
+      - 'config.yaml'
+      - 'docker-compose.yaml'
+      - 'Dockerfile'
+
+jobs:
+  sync-config:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        uses: mikefarah/yq@v4.52.2
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync config to all branches
+        run: |
+          set -e
+
+          # Checkout main to read config
+          git checkout main
+          git pull origin main
+
+          # Read IP from config.yaml
+          IP=$(yq '.ip' config.yaml | tr -d '"')
+          echo "IP: $IP"
+
+          # Get all cores under runner
+          CORES=$(yq '.runner | keys | .[]' config.yaml)
+
+          # ============================================
+          # PHASE 1: Process all "normal" branches first
+          # ============================================
+          echo "=== PHASE 1: Processing normal branches ==="
+
+          for CORE in $CORES; do
+            WORKERS=$(yq ".runner.$CORE.normal" config.yaml)
+            BRANCH="$CORE"
+
+            echo "Processing normal branch: $BRANCH (Workers: $WORKERS)"
+
+            # Check if branch exists on remote
+            if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+              echo "  Branch exists, checking out..."
+              git checkout "$BRANCH"
+              git pull origin "$BRANCH"
+            else
+              echo "  Branch does not exist, creating from template..."
+              git checkout template
+              git pull origin template
+              git checkout -b "$BRANCH"
+            fi
+
+            # Update docker-compose.yaml command line
+            sed -i "s|command: \[\"[^\"]*\", \"[^\"]*\"\]|command: [\"$IP\", \"$WORKERS\"]|" docker-compose.yaml
+
+            # Commit and push if there are changes
+            if ! git diff --quiet docker-compose.yaml; then
+              git add docker-compose.yaml
+              git commit -m "chore: Update docker-compose config (IP: $IP, Workers: $WORKERS)"
+              git push origin "$BRANCH"
+              echo "  ✓ Updated and pushed $BRANCH"
+            else
+              echo "  No changes needed for $BRANCH"
+            fi
+
+            # Push branch if it was newly created
+            if ! git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+              git push -u origin "$BRANCH"
+              echo "  ✓ Pushed new branch $BRANCH"
+            fi
+
+            git checkout main
+          done
+
+          # ============================================
+          # PHASE 2: Process all derived branches
+          # ============================================
+          echo "=== PHASE 2: Processing derived branches ==="
+
+          for CORE in $CORES; do
+            # Get all classes for this core
+            CLASSES=$(yq ".runner.$CORE | keys | .[]" config.yaml)
+
+            for CLASS in $CLASSES; do
+              # Skip normal class (already processed in Phase 1)
+              if [ "$CLASS" = "normal" ]; then
+                continue
+              fi
+
+              WORKERS=$(yq ".runner.$CORE.$CLASS" config.yaml)
+              BRANCH="$CORE-$CLASS"
+
+              echo "Processing derived branch: $BRANCH (Workers: $WORKERS)"
+
+              # Check if branch exists on remote
+              if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+                echo "  Branch exists, checking out..."
+                git checkout "$BRANCH"
+                git pull origin "$BRANCH"
+              else
+                echo "  Branch does not exist, creating from $CORE..."
+                git checkout "$CORE"
+                git pull origin "$CORE"
+                git checkout -b "$BRANCH"
+              fi
+
+              # Update docker-compose.yaml command line
+              sed -i "s|command: \[\"[^\"]*\", \"[^\"]*\"\]|command: [\"$IP\", \"$WORKERS\"]|" docker-compose.yaml
+
+              # Commit and push if there are changes
+              if ! git diff --quiet docker-compose.yaml; then
+                git add docker-compose.yaml
+                git commit -m "chore: Update docker-compose config (IP: $IP, Workers: $WORKERS)"
+                git push origin "$BRANCH"
+                echo "  ✓ Updated and pushed $BRANCH"
+              else
+                echo "  No changes needed for $BRANCH"
+              fi
+
+              # Push branch if it was newly created
+              if ! git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+                git push -u origin "$BRANCH"
+                echo "  ✓ Pushed new branch $BRANCH"
+              fi
+
+              git checkout main
+            done
+          done
+
+          echo "✓ Config sync completed"
