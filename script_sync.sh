@@ -1,6 +1,6 @@
 #!/bin/bash
 FILE="Dockerfile"
-SOURCE_BRANCH="i7"
+SOURCE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's|refs/remotes/origin/||')
 COMMIT_MSG="${1:-feat: Update Dockerfile}"
 
 # Get current branch
