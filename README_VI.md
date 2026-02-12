@@ -2,21 +2,22 @@
 
 [🇬🇧 English](./README.md)
 
-Repository này chứa các cấu hình runner cho môi trường mô phỏng phân tán MATSim (MATSim Distributed). Nó đóng vai trò như một trung tâm triển khai, tự động quản lý cấu hình các worker trên nhiều cấu hình phần cứng khác nhau.
+Repo này đóng vai trò trung tâm điều phối cho hệ thống mô phỏng MATSim phân tán. Nó tự động hóa việc quản lý và phân phối cấu hình cho các máy trạm (worker) trên nhiều nền tảng phần cứng khác nhau.
 
-## 🚀 Chiến lược Tự động hóa & Phân nhánh
+## 🚀 Cơ Chế Tự Động Hóa Branch
 
-Repository này sử dụng mô hình phân nhánh độc đáo dựa trên tự động hóa. **Không chỉnh sửa thủ công các branch runner.**
+Dự án áp dụng mô hình quản lý branch tự động (Automated Branching Model). 
+**Lưu ý quan trọng: Tuyệt đối KHÔNG chỉnh sửa thủ công các branch runner.**
 
-*   **`main`**: Nguồn dữ liệu chính (source of truth). Chứa `config.yaml`, `Dockerfile` gốc, và mẫu `docker-compose.yaml`.
-*   **Các Branch Runner** (ví dụ: `i7`, `i7-high`, `i5`): Các branch được tạo tự động tương ứng với từng cấu hình phần cứng/worker cụ thể.
+*   **`main`**: "Nguồn gốc" - Chứa `config.yaml`, `Dockerfile` gốc, và template `docker-compose.yaml`.
+*   **Branch Runner** (ví dụ: `i7`, `i7-high`, `i5`): Các branch con được sinh tự động, tương ứng với từng profile phần cứng đã định nghĩa.
 
-### Cách thức hoạt động
-1.  **Cấu hình**: Định nghĩa giới hạn phần cứng và số lượng worker trong file `config.yaml`.
-2.  **Đồng bộ**: Khi branch `main` được cập nhật, một GitHub Action (`sync-config.yml`) sẽ tự động:
-    *   Tạo/Cập nhật các branch cho từng cấu hình đã định nghĩa.
-    *   Điền các giới hạn CPU/Memory và số lượng worker cụ thể vào `docker-compose.yaml`.
-    *   Đồng bộ `Dockerfile` mới nhất từ `main` sang các branch.
+### Quy Trình Hoạt Động
+1.  **Tạo cấu hình gốc**: Khai báo tài nguyên phần cứng (CPU/RAM) và số lượng worker trong `config.yaml`.
+2.  **Đồng bộ cấu hình**: Mỗi khi branch `main` có thay đổi, GitHub Action (`sync-config.yml`) sẽ kích hoạt:
+    *   Khởi tạo hoặc cập nhật các branch con theo cấu hình.
+    *   Inject (tiêm) giới hạn tài nguyên và số lượng replica vào file `docker-compose.yaml` của từng branch.
+    *   Đồng bộ `Dockerfile` mới nhất từ `main`.
 
 ## ⚙️ Cấu hình (`config.yaml`)
 
