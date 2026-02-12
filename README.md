@@ -2,6 +2,8 @@
 
 [🇻🇳 Tiếng Việt](./README_VI.md)
 
+[![Generate Workers](https://github.com/ITS-Simulation/MATSim_Distributed_Runner/actions/workflows/sync-config.yml/badge.svg)](https://github.com/ITS-Simulation/MATSim_Distributed_Runner/actions/workflows/sync-config.yml)
+
 This repository hosts the runner configurations for the MATSim Distributed simulation environment. It acts as a deployment hub that automatically manages multiple worker configurations across different hardware profiles.
 
 ## 🚀 Automation & Branching Strategy
