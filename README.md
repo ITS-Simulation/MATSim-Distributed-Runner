@@ -4,7 +4,7 @@
 
 | Parameter | Value |
 |-----------|-------|
-| Version | latest |
+| Version |  |
 | Scenario | v2.3.0 |
 | CPU | 26.0 |
 | Memory | 10G |
