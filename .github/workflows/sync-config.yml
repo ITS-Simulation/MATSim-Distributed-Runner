@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MATSIM_RUNNER_PAT }}
 
       - name: Install yq
         uses: mikefarah/yq@v4.52.2
@@ -160,7 +160,7 @@ jobs:
             sed -i "s|memory: [^ ]*|memory: $MEMORY|" docker-compose.yaml
             sed -i "s|command: \[\"[^\"]*\", \"[^\"]*\"\]|command: [\"$IP\", \"$WORKERS\"]|" docker-compose.yaml
 
-            RELEASE_JSON=$(curl -sH "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/ITS-Simulation/MATSim_Custom/releases/latest)
+            RELEASE_JSON=$(curl -sH "Authorization: Bearer ${{ secrets.MATSIM_RUNNER_PAT }}" https://api.github.com/repos/ITS-Simulation/MATSim_Custom/releases/latest)
             VERSION=$(echo "$RELEASE_JSON" | grep -oP '"tag_name":\s*"\K[^"]+' | head -1)
             if [ "$VERSION" = "latest" ]; then
               VERSION=$(echo "$RELEASE_JSON" | grep -oP '"name":\s*"\K[^"]+' | head -1)
