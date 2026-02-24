@@ -197,7 +197,7 @@ jobs:
             git checkout main
           }
 
-          echo "=== Phase 1: Normal branches ==="
+          echo "=== Phase 1: Base branches ==="
           for CORE in $CORES; do
             CPU=$(yq ".runner[\"$CORE\"].hw.cpu" config.yaml)
             require_val "runner.$CORE.hw.cpu" "$CPU"
@@ -205,7 +205,10 @@ jobs:
             require_val "runner.$CORE.hw.memory" "$MEMORY"
             WORKERS=$(yq ".runner[\"$CORE\"].workers.normal" config.yaml)
             if [ "$WORKERS" = "null" ] || [ -z "$WORKERS" ]; then
-              echo "  ⚠ Skipping $CORE: no 'normal' worker count defined"
+              WORKERS=$(yq ".runner[\"$CORE\"].workers.base" config.yaml)
+            fi
+            if [ "$WORKERS" = "null" ] || [ -z "$WORKERS" ]; then
+              echo "  ⚠ Skipping $CORE: no 'normal' or 'base' worker count defined"
               continue
             fi
             EXPECTED_BRANCHES="$EXPECTED_BRANCHES $CORE"
@@ -218,7 +221,7 @@ jobs:
             MEMORY=$(yq ".runner[\"$CORE\"].hw.memory" config.yaml | tr -d '"')
             
             for CLASS in $(yq ".runner[\"$CORE\"].workers | keys | .[]" config.yaml); do
-              [ "$CLASS" = "normal" ] && continue
+              [ "$CLASS" = "normal" ] || [ "$CLASS" = "base" ] && continue
               WORKERS=$(yq ".runner[\"$CORE\"].workers[\"$CLASS\"]" config.yaml)
               require_val "runner.$CORE.workers.$CLASS" "$WORKERS"
               EXPECTED_BRANCHES="$EXPECTED_BRANCHES $CORE-$CLASS"
